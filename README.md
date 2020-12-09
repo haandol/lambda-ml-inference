@@ -62,9 +62,11 @@ Build *requirements.txt*
 ```bash
 sh-4.2$ cd
 sh-4.2$ cat >> requirements.txt
-torch
-torchvision
-numpy
+cython
+submitit
+torch>=1.5.0
+torchvision>=0.6.0
+scipy
 ^D
 ```
 
