@@ -57,7 +57,7 @@ sh-4.2$ sudo mount -t efs -o tls,iam,accesspoint=fsap-00770e5ffaf2cd41c fs-4610f
 sh-4.2$ sudo chown -R ssm-user:ssm-user /mnt/ml
 ```
 
-Build *requirements.txt*
+Build *requirements.txt* for [**DETR**](https://github.com/facebookresearch/detr) Model
 
 ```bash
 sh-4.2$ cd
