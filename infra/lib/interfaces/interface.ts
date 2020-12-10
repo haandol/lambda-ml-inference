@@ -6,6 +6,7 @@ export interface InferenceProps {
   vpc: ec2.IVpc;
   accessPoint: efs.IAccessPoint;
   api: apigwv2.HttpApi;
+  model: string;
 }
 
 export interface FileSystemProps {

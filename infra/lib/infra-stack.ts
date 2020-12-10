@@ -42,21 +42,22 @@ class InferenceEngine extends cdk.Construct {
   constructor(scope: cdk.Construct, id: string, props: InferenceProps) {
     super(scope, id);
 
-    const inferenceFunction = new lambda.Function(this, 'InferenceFunction', {
+    const inferenceFunction = new lambda.Function(this, `${props.model}InferenceFunction`, {
       code: lambda.Code.fromAsset(path.resolve(__dirname, 'functions', 'inference')),
-      handler: 'index.handler',
+      handler: `${props.model}.handler`,
       runtime: lambda.Runtime.PYTHON_3_7,
       timeout: cdk.Duration.minutes(5),
-      filesystem: lambda.FileSystem.fromEfsAccessPoint(props.accessPoint, '/mnt/inference'),
-      functionName: 'InferenceFunction',
+      filesystem: lambda.FileSystem.fromEfsAccessPoint(props.accessPoint, `/mnt/inference`),
+      functionName: `${props.model}InferenceFunction`,
       vpc: props.vpc,
       memorySize: 1024*10,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE,
       },
       environment: {
-        PYTHONPATH: '/mnt/inference/lib',
-        TORCH_HOME: '/mnt/inference/model'
+        PYTHONPATH: `/mnt/inference/${props.model}/lib`,
+        TORCH_HOME: `/mnt/inference/${props.model}/model`,
+        TF_WEIGHTS: `/mnt/inference/${props.model}/model/yolov4-416`,
       }
     });
     inferenceFunction.addToRolePolicy(new iam.PolicyStatement({
@@ -84,7 +85,7 @@ class InferenceEngine extends cdk.Construct {
     });
 
     props.api.addRoutes({
-      path: '/inference',
+      path: `/inference/${props.model}`,
       methods: [apigwv2.HttpMethod.POST],
       integration: inferenceIntegration,
     });
@@ -107,10 +108,14 @@ class InferenceFileSystem extends cdk.Construct {
     this.accessPoint = new efs.AccessPoint(this, 'InferenceFsAccessPoint', {
       fileSystem,
       path: '/',
+      posixUser: {
+        uid: '1001',
+        gid: '1001',
+      },
       createAcl: {
         ownerUid: '1001',
         ownerGid: '1001',
-        permissions: '0755'
+        permissions: '0777'
       },
     });
 
@@ -170,10 +175,17 @@ export class InfraStack extends cdk.Stack {
     });
 
     const httpApi = new HttpApi(this, 'HttpApi');
-    new InferenceEngine(this, 'InferenceEngine', {
+    new InferenceEngine(this, 'DetrInferenceEngine', {
       vpc,
       accessPoint: fileSystem.accessPoint,
       api: httpApi.api,
+      model: 'detr',
+    });
+    new InferenceEngine(this, 'YoloInferenceEngine', {
+      vpc,
+      accessPoint: fileSystem.accessPoint,
+      api: httpApi.api,
+      model: 'yolo',
     });
 
     new BastionHost(this, 'BastionHost', {

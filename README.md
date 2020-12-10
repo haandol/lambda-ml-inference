@@ -41,11 +41,11 @@ Get EFS Filesystem Id and EFS AccessPoint Id
 ```bash
 # Filesystem Id
 $ aws cloudformation describe-stacks --stack-name MLInferenceInfraStack --query "Stacks[0].Outputs[?ExportName=='FilesystemId'].OutputValue" --output text
-fsap-00770e5ffaf2cd41c
+fs-4610f726
 
 # EFS AccessPoint Id
 $ aws cloudformation describe-stacks --stack-name MLInferenceInfraStack --query "Stacks[0].Outputs[?ExportName=='AccessPointId'].OutputValue" --output text
-fs-4610f726
+fsap-00770e5ffaf2cd41c
 ```
 
 Mount EFS access point to Bastionhost
@@ -57,11 +57,11 @@ sh-4.2$ sudo mount -t efs -o tls,iam,accesspoint=fsap-00770e5ffaf2cd41c fs-4610f
 sh-4.2$ sudo chown -R ssm-user:ssm-user /mnt/ml
 ```
 
-Build *requirements.txt* for [**DETR**](https://github.com/facebookresearch/detr) Model
+Build *requirements* for [**DETR**](https://github.com/facebookresearch/detr) Model
 
 ```bash
 sh-4.2$ cd
-sh-4.2$ cat >> requirements.txt
+sh-4.2$ cat >> detr.txt
 cython
 submitit
 torch>=1.5.0
@@ -70,23 +70,67 @@ scipy
 ^D
 ```
 
+Build *requirements* for [**YOLOv5**] Model
+```bash
+sh-4.2$ cd
+sh-4.2$ cat >> yolo.txt
+Cython
+torch
+torchvision
+scipy
+numpy
+Pillow
+PyYAML
+tqdm
+matplotlib==3.2.2
+opencv-python>=4.2.0
+tensorboard==2.2
+^D
+```
+
 Install dependencies to run PyTorch on lambda
 
 ```bash
 sh-4.2$ sudo yum install python3 -y
-sh-4.2$ pip3 install -t /mnt/ml/lib -r requirements.txt
-# Create directory for PyTorch hub cache
-sh-4.2$ sudo -p mkdir /mnt/ml/model/hub
+sh-4.2$ pip3 install -t /mnt/ml/detr/lib -r detr.txt
+sh-4.2$ pip3 install -t /mnt/ml/yolo/lib -r yolo.txt
+
+# Create directory for DETR hub cache
+sh-4.2$ mkdir -p /mnt/ml/detr/model/hub
+
+# Create directory for YOLO hub cache
+sh-4.2$ mkdir -p /mnt/ml/yolo/model/hub
+
+# change ownership
 sh-4.2$ sudo chown -R 1001:1001 /mnt/ml
 ```
 
 # Usage
 
-Invoke `/inference` endpoint to classify bird in image
+Invoke `/inference/detr` endpoint to detect objects
 
 ```bash
 $ export URL=$(aws cloudformation describe-stacks --stack-name MLInferenceInfraStack --query "Stacks[0].Outputs[?ExportName=='HttpApiUrl'].OutputValue" --output text)
-$ http post $URL/inference url==https://d2908q01vomqb2.cloudfront.net/da4b9237bacccdf19c0760cab7aec4a8359010b0/2020/05/26/western-grebe-300x227.jpg
+$ http post $URL/inference/detr url==http://images.cocodataset.org/val2017/000000039769.jpg
+
+HTTP/1.1 200 OK
+Apigw-Requestid: XRdzDialIE0EQaw=
+Connection: keep-alive
+Content-Length: 35
+Content-Type: application/json
+Date: Wed, 09 Dec 2020 07:02:18 GMT
+
+{
+    "probas": [...],
+    "bbox": [...]
+}
+```
+
+Invoke `/inference/yolo` endpoint to detect objects
+
+```bash
+$ export URL=$(aws cloudformation describe-stacks --stack-name MLInferenceInfraStack --query "Stacks[0].Outputs[?ExportName=='HttpApiUrl'].OutputValue" --output text)
+$ http post $URL/inference/yolo url==http://images.cocodataset.org/val2017/000000039769.jpg
 
 HTTP/1.1 200 OK
 Apigw-Requestid: XRdzDialIE0EQaw=

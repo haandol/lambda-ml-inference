@@ -1,4 +1,3 @@
-import os
 import json
 import urllib
 import torch
@@ -23,14 +22,11 @@ def rescale_bboxes(out_bbox, size):
     b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
     return b
 
-model = None
+model = torch.hub.load('facebookresearch/detr', 'detr_resnet50', pretrained=True)
+model.eval()
 
 
 def handler(event, context):
-    global model
-    if not model:
-        model = torch.hub.load('facebookresearch/detr', 'detr_resnet50', pretrained=True)
-        model.eval()
     url = event['queryStringParameters']['url']
 
     im = Image.open(urllib.request.urlopen(url))

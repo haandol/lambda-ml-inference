@@ -1,0 +1,5 @@
+Cython
+submitit
+torch
+torchvision
+scipy
