@@ -96,9 +96,12 @@ Content-Type: application/json
 Date: Wed, 09 Dec 2020 07:02:18 GMT
 
 {
-    "bird_class": "053.Western_Grebe"
+    "probas": [...],
+    "bbox": [...]
 }
 ```
+
+Open [**Inference.ipynb**](Inference.ipynb) on JupyterLab, and run cells to check out visualized result
 
 # Cleanup
 
