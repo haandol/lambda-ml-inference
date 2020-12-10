@@ -117,14 +117,20 @@ sh-4.2$ mkdir -p /mnt/ml/yolo/model/hub
 
 ```
 
-**Below is tricky part, you should convert weight to tf checkout protobuf file**
+#### Generate Model for YOLOv4
 
-First, extract model from pretrained weights
+> Below is tricky part, you should convert weight to tf checkout protobuf file for YOLO
+
+[**For details**](https://github.com/theAIGuysCode/tensorflow-yolov4-tflite/)
+
+Install dependencies
 
 ```bash
 sh-4.2$ sudo yum groupinstall "Development Tools" -y
 sh-4.2$ sudo yum install libXext libSM libXrender -y
 ```
+
+Clone repository to convert weights to model
 
 ```bash
 sh-4.2$ git clone https://github.com/theAIGuysCode/tensorflow-yolov4-tflite/
@@ -134,12 +140,18 @@ sh-4.2$ pip install -r requirements.txt
 
 Download [**weights**](https://drive.google.com/open?id=1cewMfusmPjYWbrnuJRuKhPMwRe_b9PaT) and copy it to Bastionhost (using S3 or something)
 
-Run *save_mode.py*. It will take 2~4 minutes to complete, grab some coffee.
-
 ```bash
 sh-4.2$ aws configure
-...
+AWS Access Key ID [****************MT6L]: 
+AWS Secret Access Key [****************yX2F]: 
+Default region name [ap-northeast-2]: 
+Default output format [json]:
 sh-4.2$ aws s3 cp s3://yolov4-dongkyl/yolov4.weights ./data/yolov4.weights
+```
+
+Run *save_model.py*. It will take 2~4 minutes to complete, grab some coffee.
+
+```bash
 sh-4.2$ python3 save_model.py --weights ./data/yolov4.weights --output ./checkpoints/yolov4-416 --input_size 416 --model yolov4
 ...
 INFO:tensorflow:Assets written to: ./checkpoints/yolov4-416/assets
@@ -157,7 +169,7 @@ sh-4.2$ ls /mnt/ml/yolo/model
 yolov4-416
 ```
 
-# Usage
+# Inference
 
 > First invocation will take over **60s** which is timeout limit for API Gateway
 
