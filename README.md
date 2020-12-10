@@ -1,6 +1,6 @@
 # PyTorch Inference on Lambda + EFS
 
-This repository is for inference using PyTorch on Lambda and EFS
+This repository is for inferencing PyTorch/Tensorflow model on Lambda and EFS
 
 Running this repository may cost you to provision AWS resources
 
