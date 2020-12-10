@@ -13,6 +13,8 @@ Running this repository may cost you to provision AWS resources
 
 # Installation
 
+## CDK
+
 ```bash
 $ cd infra
 $ npm i
@@ -25,6 +27,7 @@ $ cdk bootstrap
 $ cdk deploy "*" --require-approval never
 ```
 
+## EFS
 Connect to Bastionhost
 
 ```bash
@@ -54,10 +57,11 @@ Mount EFS access point to Bastionhost
 sh-4.2$ sudo yum -y install amazon-efs-utils
 sh-4.2$ sudo mkdir /mnt/ml
 sh-4.2$ sudo mount -t efs -o tls,iam,accesspoint=fsap-00770e5ffaf2cd41c fs-4610f726: /mnt/ml
-sh-4.2$ sudo chown -R ssm-user:ssm-user /mnt/ml
 ```
 
-Build *requirements* for [**DETR**](https://github.com/facebookresearch/detr) Model
+### DETR (based on PyTorch)
+
+Build [**requirements**](deps/detr.txt) for [**DETR**](https://github.com/facebookresearch/detr) Model
 
 ```bash
 sh-4.2$ cd
@@ -70,7 +74,21 @@ scipy
 ^D
 ```
 
-Build *requirements* for [**YOLOv5**] Model
+Install dependencies to run PyTorch on lambda
+
+```bash
+sh-4.2$ sudo yum install python3 -y
+sh-4.2$ pip3 install -t /mnt/ml/detr/lib -r detr.txt
+
+# Create directory for DETR hub cache
+sh-4.2$ mkdir -p /mnt/ml/detr/model/hub
+
+# give permission to write on model for caching
+sh-4.2$ sudo chmod -R o+w /mnt/ml/detr/model
+```
+
+### YOLOv4 (Based on TF)
+Build [**requirements**](deps/yolo.txt) for [**YOLOv4**](https://github.com/theAIGuysCode/tensorflow-yolov4-tflite/) Model
 ```bash
 sh-4.2$ cd
 sh-4.2$ cat >> yolo.txt
@@ -92,20 +110,58 @@ Install dependencies to run PyTorch on lambda
 
 ```bash
 sh-4.2$ sudo yum install python3 -y
-sh-4.2$ pip3 install -t /mnt/ml/detr/lib -r detr.txt
 sh-4.2$ pip3 install -t /mnt/ml/yolo/lib -r yolo.txt
-
-# Create directory for DETR hub cache
-sh-4.2$ mkdir -p /mnt/ml/detr/model/hub
 
 # Create directory for YOLO hub cache
 sh-4.2$ mkdir -p /mnt/ml/yolo/model/hub
 
-# change ownership
-sh-4.2$ sudo chown -R 1001:1001 /mnt/ml
+```
+
+**Below is tricky part, you should convert weight to tf checkout protobuf file**
+
+First, extract model from pretrained weights
+
+```bash
+sh-4.2$ sudo yum groupinstall "Development Tools" -y
+sh-4.2$ sudo yum install libXext libSM libXrender -y
+```
+
+```bash
+sh-4.2$ git clone https://github.com/theAIGuysCode/tensorflow-yolov4-tflite/
+sh-4.2$ cd tensorflow-yolov4-tflite
+sh-4.2$ pip install -r requirements.txt
+```
+
+Download [**weights**](https://drive.google.com/open?id=1cewMfusmPjYWbrnuJRuKhPMwRe_b9PaT) and copy it to Bastionhost (using S3 or something)
+
+Run *save_mode.py*. It will take 2~4 minutes to complete, grab some coffee.
+
+```bash
+sh-4.2$ aws configure
+...
+sh-4.2$ aws s3 cp s3://yolov4-dongkyl/yolov4.weights ./data/yolov4.weights
+sh-4.2$ python3 save_model.py --weights ./data/yolov4.weights --output ./checkpoints/yolov4-416 --input_size 416 --model yolov4
+...
+INFO:tensorflow:Assets written to: ./checkpoints/yolov4-416/assets
+I1210 07:17:00.547124 140626054760256 builder_impl.py:775] Assets written to: ./checkpoints/yolov4-416/assets
+
+sh-4.2$ ls checkpoints/
+yolov4-416
+```
+
+Copy checkpoint file to EFS mounting point, `/mnt/ml/yolo/model`
+
+```bash
+sh-4.2$ cp -R checkpoints/yolov4-416/ /mnt/ml/yolo/model 
+sh-4.2$ ls /mnt/ml/yolo/model
+yolov4-416
 ```
 
 # Usage
+
+> First invocation will take over **60s** which is timeout limit for API Gateway
+
+## DETR
 
 Invoke `/inference/detr` endpoint to detect objects
 
@@ -126,6 +182,10 @@ Date: Wed, 09 Dec 2020 07:02:18 GMT
 }
 ```
 
+Open [**DetrInference.ipynb**](detrInference.ipynb) on JupyterLab, and run cells to check out visualized result
+
+## Yolov4
+
 Invoke `/inference/yolo` endpoint to detect objects
 
 ```bash
@@ -140,12 +200,13 @@ Content-Type: application/json
 Date: Wed, 09 Dec 2020 07:02:18 GMT
 
 {
-    "probas": [...],
-    "bbox": [...]
+    "scores": [...],
+    "boxes": [...]
+    "classes": [...]
 }
 ```
 
-Open [**Inference.ipynb**](Inference.ipynb) on JupyterLab, and run cells to check out visualized result
+Open [**YoloInference.ipynb**](yoloInference.ipynb) on JupyterLab, and run cells to check out visualized result
 
 # Cleanup
 
