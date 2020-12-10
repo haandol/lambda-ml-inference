@@ -1,4 +1,4 @@
-# PyTorch Inference on Lambda + EFS
+# ML Inference on Lambda + EFS
 
 This repository is for inferencing PyTorch/Tensorflow model on Lambda and EFS
 
