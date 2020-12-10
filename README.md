@@ -182,7 +182,7 @@ Date: Wed, 09 Dec 2020 07:02:18 GMT
 }
 ```
 
-Open [**DetrInference.ipynb**](detrInference.ipynb) on JupyterLab, and run cells to check out visualized result
+Open [**DetrInference.ipynb**](DetrInference.ipynb) on JupyterLab, and run cells to check out visualized result
 
 ## Yolov4
 
@@ -206,7 +206,7 @@ Date: Wed, 09 Dec 2020 07:02:18 GMT
 }
 ```
 
-Open [**YoloInference.ipynb**](yoloInference.ipynb) on JupyterLab, and run cells to check out visualized result
+Open [**YoloInference.ipynb**](YoloInference.ipynb) on JupyterLab, and run cells to check out visualized result
 
 # Cleanup
 
